@@ -359,7 +359,7 @@ const Home = () => {
       {/* CTA Section */}
       <div style={{
         padding: '100px 4%',
-        background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.9) 100%), url("https://assets.nflxext.com/ffe/siteui/vlv3/9d3533b2-0e2b-40b2-95e0-ecd7979cc88b/2b0a407d-6737-4b1a-8a5b-8df8db1a6825/US-en-20240311-popsignuptwoweeks-perspective_alpha_website_large.jpg") center/cover no-repeat',
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.9) 100%)',
         textAlign: 'center',
         borderBottom: '8px solid #222'
       }}>
