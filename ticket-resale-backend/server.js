@@ -5,12 +5,16 @@ const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const { Server } = require('socket.io');
 const http = require('http');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const server = http.createServer(app);
 
-// ✅ Validate environment variables before using them
-const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_KEY', 'MONGO_URI'];
+// ======================
+// Environment Validation
+// ======================
+const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_KEY', 'MONGO_URI', 'NODE_ENV'];
 requiredEnvVars.forEach(env => {
   if (!process.env[env]) {
     console.error(`❌ Missing required environment variable: ${env}`);
@@ -18,11 +22,18 @@ requiredEnvVars.forEach(env => {
   }
 });
 
-// ✅ Initialize Supabase Correctly
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+const isProduction = process.env.NODE_ENV === 'production';
+
+// ======================
+// Security Middleware
+// ======================
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 // ✅ CORS Configuration
 const allowedOrigins = [
@@ -30,74 +41,137 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:3000",
   "http://127.0.0.1:5173",
+  "https://resale-git-main-526phanis-projects.vercel.app/listings", // ✅ Vercel Frontend
+  "https://resale-git-main-526phanis-projects.vercel.app/ticket", // ✅ Vercel Frontend
+  "https://resale-git-main-526phanis-projects.vercel.app", // ✅ Vercel Frontend
   "https://resale-ihdipllyl-526phanis-projects.vercel.app", // ✅ Vercel Frontend
   "https://resale-210322m8t-526phanis-projects.vercel.app" // ✅ Another Deployed Frontend (if needed)
 ];
 
-app.use(cors({
-  origin: allowedOrigins,
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin && !isProduction) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || !isProduction) {
+      callback(null, true);
+    } else {
+      console.error(`🚨 CORS Blocked for origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-    "Accept"
-  ],
-  credentials: true
-}));
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  credentials: true,
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+};
 
-// ✅ Socket.io Server Setup
-const io = new Server(server, { 
-  cors: { 
-    origin: allowedOrigins,
-    methods: ["GET", "POST"]
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable preflight for all routes
+
+// ======================
+// Database Connections
+// ======================
+// Supabase Client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY,
+  {
+    auth: {
+      persistSession: false
+    }
   }
-});
-
-// ✅ Express JSON Middleware (Important for Handling Requests)
-app.use(express.json());
-
-// ✅ MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => {
-    console.error("❌ MongoDB Connection Error:", err);
-    process.exit(1);
-  });
-
-// ✅ Sample Route to Test Deployment
-app.get("/", (req, res) => {
-  res.send("🎉 Backend is running successfully!");
-});
-
-
-// Handle preflight requests
-app.options('*', cors());
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('Body:', JSON.stringify(req.body, null, 2));
-  }
-  next();
-});
+);
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/ticketing', { 
-  useNewUrlParser: true, 
-  useUnifiedTopology: true 
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  retryWrites: true,
+  w: 'majority'
 })
-.then(() => console.log("MongoDB Connected"))
+.then(() => console.log("✅ MongoDB Connected"))
 .catch(err => {
-  console.error("MongoDB Connection Error:", err);
-  process.exit(1); // Exit if DB connection fails
+  console.error("❌ MongoDB Connection Error:", err);
+  process.exit(1);
+});
+
+// ======================
+// Socket.IO Configuration
+// ======================
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+    skipMiddlewares: true
+  }
+});
+
+// Socket connection handler
+io.on('connection', (socket) => {
+  console.log('🔌 New client connected');
+  
+  socket.on('disconnect', () => {
+    console.log('❌ Client disconnected');
+  });
+});
+
+// ======================
+// Express Configuration
+// ======================
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// ======================
+// Routes
+// ======================
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    supabase: supabase ? 'connected' : 'disconnected'
+  });
+});
+
+app.get('/', (req, res) => {
+  res.send('🎉 Backend is running successfully!');
+});
+
+// ======================
+// Error Handling
+// ======================
+app.use((err, req, res, next) => {
+  console.error('🔥 Error:', err.stack);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: isProduction ? 'Something went wrong!' : err.message
+  });
+});
+
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
+});
+
+// ======================
+// Server Startup
+// ======================
+
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('💥 Unhandled Rejection:', err);
+  server.close(() => process.exit(1));
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
+  server.close(() => process.exit(1));
 });
 
 // Ticket Schema
@@ -440,6 +514,7 @@ app.use((err, req, res, next) => {
 // Start Server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`CORS enabled for: http://localhost:3000 and http://localhost:5173`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🔄 Allowed origins: ${allowedOrigins.join(', ')}`);
 });

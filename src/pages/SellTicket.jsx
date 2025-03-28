@@ -185,7 +185,7 @@ const SellTicket = () => {
         sellerId: user.id,
       };
 
-      const response = await axios.post('http://localhost:5000/ticket', ticketData, {
+      const response = await axios.post('https://resale-x61j.onrender.com/ticket', ticketData, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json'
