@@ -2,23 +2,19 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const { createClient } = require('@supabase/supabase-js'); // ✅ Keep only this import
+const { createClient } = require('@supabase/supabase-js');
 const { Server } = require('socket.io');
 const http = require('http');
 
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server(server, { 
-  cors: { 
-    origin: [
-      "http://localhost:3000", 
-      "http://localhost:5173",
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:5173",
-      "https://resale-ihdipllyl-526phanis-projects.vercel.app" // ✅ Added Vercel frontend
-    ],
-    methods: ["GET", "POST"]
+// ✅ Validate environment variables before using them
+const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_KEY', 'MONGO_URI'];
+requiredEnvVars.forEach(env => {
+  if (!process.env[env]) {
+    console.error(`❌ Missing required environment variable: ${env}`);
+    process.exit(1);
   }
 });
 
@@ -28,35 +24,53 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
-// ✅ Validate environment variables
-const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_KEY', 'MONGO_URI'];
-requiredEnvVars.forEach(env => {
-  if (!process.env[env]) {
-    console.error(`Missing required environment variable: ${env}`);
-    process.exit(1);
-  }
-});
+// ✅ CORS Configuration
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5173",
+  "https://resale-ihdipllyl-526phanis-projects.vercel.app", // ✅ Vercel Frontend
+  "https://resale-210322m8t-526phanis-projects.vercel.app" // ✅ Another Deployed Frontend (if needed)
+];
 
-// ✅ Updated CORS Configuration
 app.use(cors({
-  origin: [
-    "http://localhost:3000", 
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-    "https://resale-ihdipllyl-526phanis-projects.vercel.app" // ✅ Allow frontend URL
-  ],
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: [
-    "Content-Type", 
+    "Content-Type",
     "Authorization",
     "X-Requested-With",
     "Accept"
   ],
-  credentials: true,
-  maxAge: 86400
+  credentials: true
 }));
 
+// ✅ Socket.io Server Setup
+const io = new Server(server, { 
+  cors: { 
+    origin: allowedOrigins,
+    methods: ["GET", "POST"]
+  }
+});
+
+// ✅ Express JSON Middleware (Important for Handling Requests)
+app.use(express.json());
+
+// ✅ MongoDB Connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => {
+    console.error("❌ MongoDB Connection Error:", err);
+    process.exit(1);
+  });
+
+// ✅ Sample Route to Test Deployment
+app.get("/", (req, res) => {
+  res.send("🎉 Backend is running successfully!");
+});
 
 
 // Handle preflight requests
