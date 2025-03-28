@@ -11,6 +11,14 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const server = http.createServer(app);
 
+
+// Example (Node.js/Express)
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://resale-git-main-526phanis-projects.vercel.app");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
+
 // ======================
 // Environment Validation
 // ======================
