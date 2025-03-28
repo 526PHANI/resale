@@ -32,7 +32,8 @@ const Listings = ({ user }) => {
         ...filters
       });
 
-      const response = await axios.get(`http://localhost:5000/tickets?${params}`);
+      const response = await axios.get(`https://resale-x61j.onrender.com/tickets?${params}`);
+
       const ticketsData = Array.isArray(response.data?.data) 
         ? response.data.data 
         : [];
