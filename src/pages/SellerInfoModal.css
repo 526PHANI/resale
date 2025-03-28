@@ -1,0 +1,240 @@
+/* Netflix-inspired styles */
+@import url('https://fonts.googleapis.com/css2?family=Netflix+Sans:wght@300;400;500;700&display=swap');
+
+.netflix-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.netflix-modal-content {
+  background-color: #141414;
+  color: #fff;
+  border-radius: 6px;
+  width: 90%;
+  max-width: 500px;
+  padding: 30px;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  border: 1px solid #333;
+}
+
+.netflix-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 5px;
+  transition: all 0.2s;
+}
+
+.netflix-modal-close:hover {
+  transform: scale(1.1);
+}
+
+.netflix-modal-header {
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.netflix-modal-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 5px 0;
+  color: #fff;
+}
+
+.netflix-modal-subtitle {
+  font-size: 16px;
+  color: #a3a3a3;
+  margin: 0;
+}
+
+.netflix-seller-profile {
+  display: flex;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #333;
+}
+
+.netflix-avatar-container {
+  position: relative;
+  margin-right: 15px;
+}
+
+.netflix-seller-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #E50914;
+}
+
+.netflix-avatar-fallback {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background-color: #E50914;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  border: 2px solid #E50914;
+}
+
+.netflix-verification-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #E50914;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid #141414;
+}
+
+.netflix-seller-info {
+  flex: 1;
+}
+
+.netflix-seller-name {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0 0 5px 0;
+}
+
+.netflix-rating-badge {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #a3a3a3;
+}
+
+.netflix-star-icon {
+  margin-right: 5px;
+}
+
+.netflix-contact-section {
+  background-color: #1f1f1f;
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.netflix-contact-method {
+  display: flex;
+  align-items: center;
+}
+
+.netflix-contact-icon {
+  margin-right: 15px;
+}
+
+.netflix-contact-label {
+  display: block;
+  font-size: 14px;
+  color: #a3a3a3;
+  margin-bottom: 3px;
+}
+
+.netflix-contact-number {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.netflix-copy-button {
+  background-color: #E50914;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.netflix-copy-button:hover {
+  background-color: #f40612;
+}
+
+.netflix-copy-button svg {
+  margin-right: 8px;
+}
+
+.netflix-copied {
+  background-color: #2a9605;
+}
+
+.netflix-copied:hover {
+  background-color: #2a9605;
+}
+
+.netflix-safety-tips {
+  margin-bottom: 25px;
+}
+
+.netflix-safety-title {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 10px;
+  color: #fff;
+}
+
+.netflix-tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: #a3a3a3;
+  font-size: 14px;
+}
+
+.netflix-tips-list li {
+  margin-bottom: 5px;
+}
+
+.netflix-message-button {
+  width: 100%;
+  background-color: #E50914;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.netflix-message-button:hover {
+  background-color: #f40612;
+}
+
+.netflix-message-button svg {
+  margin-right: 10px;
+}

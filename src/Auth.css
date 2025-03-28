@@ -1,0 +1,51 @@
+.auth-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  
+  .auth-button {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .auth-button.google {
+    background: #4285F4;
+    color: white;
+  }
+  
+  .auth-button.phone {
+    background: #25D366;
+    color: white;
+  }
+  
+  .auth-button.verify {
+    background: #333;
+    color: white;
+  }
+  
+  .divider {
+    margin: 1rem 0;
+    color: #666;
+  }
+  
+  input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
