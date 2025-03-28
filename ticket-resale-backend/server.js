@@ -5,17 +5,23 @@ const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const { Server } = require('socket.io');
 const http = require('http');
-
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { 
   cors: { 
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: [
+      "http://localhost:3000", 
+      "http://localhost:5173",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:5173",
+      "https://resale-ihdipllyl-526phanis-projects.vercel.app" // ✅ Added Vercel frontend
+    ],
     methods: ["GET", "POST"]
   }
 });
 
 // Initialize Supabase
+const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
@@ -30,13 +36,14 @@ requiredEnvVars.forEach(env => {
   }
 });
 
-// Enhanced CORS configuration
+// ✅ Updated CORS Configuration
 app.use(cors({
   origin: [
     "http://localhost:3000", 
     "http://localhost:5173",
     "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    "https://resale-ihdipllyl-526phanis-projects.vercel.app" // ✅ Allow frontend URL
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: [
@@ -48,6 +55,7 @@ app.use(cors({
   credentials: true,
   maxAge: 86400
 }));
+
 
 // Handle preflight requests
 app.options('*', cors());
