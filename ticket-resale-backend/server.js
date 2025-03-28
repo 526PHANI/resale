@@ -2,11 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const { createClient } = require('@supabase/supabase-js');
+const { createClient } = require('@supabase/supabase-js'); // ✅ Keep only this import
 const { Server } = require('socket.io');
 const http = require('http');
+
 const app = express();
 const server = http.createServer(app);
+
 const io = new Server(server, { 
   cors: { 
     origin: [
@@ -20,14 +22,13 @@ const io = new Server(server, {
   }
 });
 
-// Initialize Supabase
-const { createClient } = require('@supabase/supabase-js');
+// ✅ Initialize Supabase Correctly
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
 
-// Validate environment variables
+// ✅ Validate environment variables
 const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_KEY', 'MONGO_URI'];
 requiredEnvVars.forEach(env => {
   if (!process.env[env]) {
@@ -55,6 +56,7 @@ app.use(cors({
   credentials: true,
   maxAge: 86400
 }));
+
 
 
 // Handle preflight requests
