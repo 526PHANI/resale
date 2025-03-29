@@ -30,42 +30,48 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+const cors = require("cors");
+
+const isProduction = process.env.NODE_ENV === "production";
+
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
   "http://127.0.0.1:3000",
   "http://127.0.0.1:5173",
-  "https://resale-git-main-526phanis-projects.vercel.app/listings", // ✅ Vercel Frontend
-  "https://resale-git-main-526phanis-projects.vercel.app/ticket", // ✅ Vercel Frontend
-  "https://resale-git-main-526phanis-projects.vercel.app", // ✅ Vercel Frontend
-  "https://resale-ihdipllyl-526phanis-projects.vercel.app", // ✅ Vercel Frontend
-  "https://resale-210322m8t-526phanis-projects.vercel.app", // ✅ Another Deployed Frontend (if needed)
-  "/\.vercel\.app$/", // ✅ Vercel Frontend (Regex for any Vercel app)
-  "https://resale-x61j.onrender.com", // ✅ Render Frontend
+  "https://resale-git-main-526phanis-projects.vercel.app",
+  "https://resale-ihdipllyl-526phanis-projects.vercel.app",
+  "https://resale-210322m8t-526phanis-projects.vercel.app",
+  "https://resale-x61j.onrender.com",
+  /\.vercel\.app$/, // ✅ Any Vercel subdomain (Regex)
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin && !isProduction) return callback(null, true);
-    if (allowedOrigins.some(o => origin && origin.match(o))) {
-      callback(null, true);
-    } else {
-      console.error(`🚨 CORS Blocked for origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests without an origin (e.g., Postman, server-to-server)
+    if (!origin || !isProduction) {
+      return callback(null, true);
     }
+    // Check if the origin is in the allowed list
+    if (allowedOrigins.some(o => (typeof o === "string" && o === origin) || (o instanceof RegExp && o.test(origin)))) {
+      return callback(null, true);
+    }
+    console.error(`🚨 CORS Blocked for origin: ${origin}`);
+    return callback(new Error("Not allowed by CORS"));
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   credentials: true,
-  preflightContinue: false, // ✅ Ensures `OPTIONS` requests are properly handled
-  optionsSuccessStatus: 204 
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
 };
 
+// Apply CORS Middleware
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); 
+app.options("*", cors(corsOptions));
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+
+
 
 
 const supabase = createClient(
@@ -79,8 +85,6 @@ const supabase = createClient(
 );
 
 mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   retryWrites: true,
   w: 'majority'
 })
@@ -89,6 +93,7 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error("❌ MongoDB Connection Error:", err);
   process.exit(1);
 });
+
 
 const io = new Server(server, {
   cors: {
@@ -438,7 +443,6 @@ app.get('/ticket/:id', async (req, res) => {
   }
 });
 
-// Get Seller Contact (Protected)
 app.get('/ticket/:id/contact', verifySupabaseToken, async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id);
@@ -465,7 +469,6 @@ app.get('/ticket/:id/contact', verifySupabaseToken, async (req, res) => {
   }
 });
 
-// WebSocket Connection
 io.on('connection', (socket) => {
   console.log('New client connected');
   
@@ -474,7 +477,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -484,7 +486,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
