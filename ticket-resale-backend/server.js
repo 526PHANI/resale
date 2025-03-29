@@ -12,16 +12,6 @@ const app = express();
 const server = http.createServer(app);
 
 
-// Example (Node.js/Express)
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://resale-git-main-526phanis-projects.vercel.app");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
-});
-
-// ======================
-// Environment Validation
-// ======================
 const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_KEY', 'MONGO_URI', 'NODE_ENV'];
 requiredEnvVars.forEach(env => {
   if (!process.env[env]) {
@@ -32,9 +22,6 @@ requiredEnvVars.forEach(env => {
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// ======================
-// Security Middleware
-// ======================
 app.use(helmet());
 
 const limiter = rateLimit({
@@ -43,7 +30,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// ✅ CORS Configuration
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
@@ -53,15 +39,15 @@ const allowedOrigins = [
   "https://resale-git-main-526phanis-projects.vercel.app/ticket", // ✅ Vercel Frontend
   "https://resale-git-main-526phanis-projects.vercel.app", // ✅ Vercel Frontend
   "https://resale-ihdipllyl-526phanis-projects.vercel.app", // ✅ Vercel Frontend
-  "https://resale-210322m8t-526phanis-projects.vercel.app" // ✅ Another Deployed Frontend (if needed)
+  "https://resale-210322m8t-526phanis-projects.vercel.app", // ✅ Another Deployed Frontend (if needed)
+  "/\.vercel\.app$/", // ✅ Vercel Frontend (Regex for any Vercel app)
+  "https://resale-x61j.onrender.com", // ✅ Render Frontend
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin && !isProduction) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || !isProduction) {
+    if (allowedOrigins.some(o => origin && origin.match(o))) {
       callback(null, true);
     } else {
       console.error(`🚨 CORS Blocked for origin: ${origin}`);
@@ -71,16 +57,17 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   credentials: true,
-  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+  preflightContinue: false, // ✅ Ensures `OPTIONS` requests are properly handled
+  optionsSuccessStatus: 204 
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Enable preflight for all routes
+app.options('*', cors(corsOptions)); 
 
-// ======================
-// Database Connections
-// ======================
-// Supabase Client
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY,
@@ -91,7 +78,6 @@ const supabase = createClient(
   }
 );
 
-// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -104,9 +90,6 @@ mongoose.connect(process.env.MONGO_URI, {
   process.exit(1);
 });
 
-// ======================
-// Socket.IO Configuration
-// ======================
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -119,7 +102,6 @@ const io = new Server(server, {
   }
 });
 
-// Socket connection handler
 io.on('connection', (socket) => {
   console.log('🔌 New client connected');
   
@@ -128,15 +110,9 @@ io.on('connection', (socket) => {
   });
 });
 
-// ======================
-// Express Configuration
-// ======================
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// ======================
-// Routes
-// ======================
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -149,9 +125,6 @@ app.get('/', (req, res) => {
   res.send('🎉 Backend is running successfully!');
 });
 
-// ======================
-// Error Handling
-// ======================
 app.use((err, req, res, next) => {
   console.error('🔥 Error:', err.stack);
   res.status(500).json({
@@ -160,29 +133,21 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 Handler
+
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });
 });
 
-// ======================
-// Server Startup
-// ======================
-
-
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error('💥 Unhandled Rejection:', err);
   server.close(() => process.exit(1));
 });
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err);
   server.close(() => process.exit(1));
 });
 
-// Ticket Schema
 const TicketSchema = new mongoose.Schema({
   movie: {
     type: String,
