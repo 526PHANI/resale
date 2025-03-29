@@ -19,6 +19,19 @@ if (!supabaseUrl || !supabaseKey) {
   `);
 }
 
+// Add this after supabase initialization
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Supabase auth event:', event, session);
+});
+
+// Add error listener
+supabase.getSubscriptions().forEach(sub => {
+  sub.on('error', error => {
+    console.error('Supabase subscription error:', error);
+  });
+});
+
+
 // Initialize Supabase client
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {

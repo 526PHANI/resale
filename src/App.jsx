@@ -15,26 +15,28 @@ function App() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: window.location.origin + '/auth/callback'
       }
     });
-    if (error) console.error("Google login error:", error);
+    if (error) {
+      console.error("Google login error:", error);
+      // Add error state to show user feedback
+    }
   };
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
-    };
-
-    checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event); // Add this for debugging
       setUser(session?.user || null);
+      
+      // Handle OAuth callback
+      if (event === 'SIGNED_IN' && window.location.search.includes('code=')) {
+        // Clean URL after successful auth
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     });
-
-    return () => subscription.unsubscribe();
+  
+    return () => subscription?.unsubscribe();
   }, []);
 
   if (loading) {

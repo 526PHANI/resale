@@ -141,17 +141,23 @@ const SellTicket = () => {
     setFilteredTheaters([...new Set(theatresForCity)]);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!user) {
-      setSnackbar({
-        open: true,
-        message: "Please login to sell tickets",
-        severity: "error",
-      });
-      return;
-    }
+// Replace your current handleSubmit with this:
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  const { data: { session }, error: authError } = await supabase.auth.getSession();
+  
+  if (authError || !session?.user) {
+    setSnackbar({
+      open: true,
+      message: "Session expired. Please login again.",
+      severity: "error"
+    });
+    await supabase.auth.signOut();
+    return;
+  }
+
+  // Rest of your submit logic...
 
     if (!form.contactNumber.match(/^\+91[0-9]{10}$/)) {
       setSnackbar({
@@ -232,25 +238,30 @@ const SellTicket = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-  const handleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({ 
-        provider: 'google',
-        options: {
-          redirectTo: window.location.href
-        }
-      });
-      
-      if (error) throw error;
-    } catch (error) {
-      console.error("Login error:", error);
-      setSnackbar({
-        open: true,
-        message: "Login failed. Please try again.",
-        severity: "error"
-      });
-    }
-  };
+
+    const handleLogin = async () => {
+      try {
+        const { error } = await supabase.auth.signInWithOAuth({ 
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin + '/auth/callback',
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent'
+            }
+          }
+        });
+        
+        if (error) throw error;
+      } catch (error) {
+        console.error("Login error:", error);
+        setSnackbar({
+          open: true,
+          message: error.message || "Login failed. Please try again.",
+          severity: "error"
+        });
+      }
+    };
 
   if (loading) {
     return (
