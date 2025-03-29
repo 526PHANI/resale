@@ -43,3 +43,8 @@
     border-radius: 4px;
     cursor: pointer;
   }
+
+  /* Add this to your global CSS */
+[src*="popsignuptwoweeks"] {
+  display: none !important;
+}

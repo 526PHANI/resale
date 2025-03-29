@@ -25,3 +25,9 @@ button {
 button:hover {
   background: #008c9e;
 }
+
+
+/* Add this to your global CSS */
+[src*="popsignuptwoweeks"] {
+  display: none !important;
+}

@@ -160,7 +160,10 @@
   font-weight: 600;
 }
 
-
+/* Add this to your global CSS */
+[src*="popsignuptwoweeks"] {
+  display: none !important;
+}
 
 .image-placeholder svg {
   color:#9CA3AF;

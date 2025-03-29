@@ -6,6 +6,11 @@
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     text-align: center;
   }
+
+  /* Add this to your global CSS */
+[src*="popsignuptwoweeks"] {
+  display: none !important;
+}
   
   .auth-button {
     width: 100%;
