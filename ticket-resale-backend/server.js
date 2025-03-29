@@ -11,7 +11,7 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const server = http.createServer(app);
 
-
+// Validate required environment variables
 const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_KEY', 'MONGO_URI', 'NODE_ENV'];
 requiredEnvVars.forEach(env => {
   if (!process.env[env]) {
@@ -20,20 +20,18 @@ requiredEnvVars.forEach(env => {
   }
 });
 
-const isProduction = process.env.NODE_ENV === 'production';
-
+// Security middleware
 app.use(helmet());
 
+// Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // limit each IP to 100 requests per windowMs
 });
 app.use(limiter);
 
-const cors = require("cors");
-
+// CORS configuration
 const isProduction = process.env.NODE_ENV === "production";
-
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
@@ -43,16 +41,14 @@ const allowedOrigins = [
   "https://resale-ihdipllyl-526phanis-projects.vercel.app",
   "https://resale-210322m8t-526phanis-projects.vercel.app",
   "https://resale-x61j.onrender.com",
-  /\.vercel\.app$/, // ✅ Any Vercel subdomain (Regex)
+  /\.vercel\.app$/,
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests without an origin (e.g., Postman, server-to-server)
     if (!origin || !isProduction) {
       return callback(null, true);
     }
-    // Check if the origin is in the allowed list
     if (allowedOrigins.some(o => (typeof o === "string" && o === origin) || (o instanceof RegExp && o.test(origin)))) {
       return callback(null, true);
     }
@@ -66,14 +62,10 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-// Apply CORS Middleware
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
-
-
-
-
+// Database connections
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY,
@@ -94,7 +86,7 @@ mongoose.connect(process.env.MONGO_URI, {
   process.exit(1);
 });
 
-
+// Socket.io setup
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -107,52 +99,11 @@ const io = new Server(server, {
   }
 });
 
-io.on('connection', (socket) => {
-  console.log('🔌 New client connected');
-  
-  socket.on('disconnect', () => {
-    console.log('❌ Client disconnected');
-  });
-});
-
+// Request body parsing
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    supabase: supabase ? 'connected' : 'disconnected'
-  });
-});
-
-app.get('/', (req, res) => {
-  res.send('🎉 Backend is running successfully!');
-});
-
-app.use((err, req, res, next) => {
-  console.error('🔥 Error:', err.stack);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: isProduction ? 'Something went wrong!' : err.message
-  });
-});
-
-
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not Found' });
-});
-
-process.on('unhandledRejection', (err) => {
-  console.error('💥 Unhandled Rejection:', err);
-  server.close(() => process.exit(1));
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('💥 Uncaught Exception:', err);
-  server.close(() => process.exit(1));
-});
-
+// Ticket Schema
 const TicketSchema = new mongoose.Schema({
   movie: {
     type: String,
@@ -225,7 +176,7 @@ const TicketSchema = new mongoose.Schema({
 
 const Ticket = mongoose.model('Ticket', TicketSchema);
 
-// JWT Verification Middleware
+// Middleware
 const verifySupabaseToken = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   
@@ -254,7 +205,6 @@ const verifySupabaseToken = async (req, res, next) => {
   }
 };
 
-// Validation Middleware
 const validateTicketInput = (req, res, next) => {
   const requiredFields = {
     movie: 'string',
@@ -265,7 +215,7 @@ const validateTicketInput = (req, res, next) => {
     numberOfTickets: 'number',
     pricePerTicket: 'number',
     contactNumber: 'string',
-    seatNumber: 'string', // Add seatNumber validation
+    seatNumber: 'string',
   };
 
   const errors = [];
@@ -289,17 +239,19 @@ const validateTicketInput = (req, res, next) => {
   next();
 };
 
-// Health Check Endpoint
+// Routes
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    dbStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    supabaseStatus: 'connected'
+  res.status(200).json({
+    status: 'healthy',
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    supabase: supabase ? 'connected' : 'disconnected'
   });
 });
 
-// Ticket Creation Route
+app.get('/', (req, res) => {
+  res.send('🎉 Backend is running successfully!');
+});
+
 app.post('/ticket', verifySupabaseToken, validateTicketInput, async (req, res) => {
   try {
     const { 
@@ -311,10 +263,9 @@ app.post('/ticket', verifySupabaseToken, validateTicketInput, async (req, res) =
       numberOfTickets, 
       pricePerTicket, 
       contactNumber,
-      seatNumber // Add seatNumber here
+      seatNumber
     } = req.body;
 
-    // Calculate total price
     const totalPrice = pricePerTicket * numberOfTickets;
 
     const ticket = new Ticket({
@@ -328,12 +279,11 @@ app.post('/ticket', verifySupabaseToken, validateTicketInput, async (req, res) =
       totalPrice,
       supabase_user_id: req.user.id,
       contactNumber,
-      seatNumber // Add seatNumber here
+      seatNumber
     });
 
     await ticket.save();
 
-    // Emit real-time update
     io.emit('new_ticket', ticket);
     io.emit('ticketCreated', {
       movie: ticket.movie,
@@ -344,7 +294,7 @@ app.post('/ticket', verifySupabaseToken, validateTicketInput, async (req, res) =
       numberOfTickets: ticket.numberOfTickets,
       pricePerTicket: ticket.pricePerTicket,
       totalPrice: ticket.totalPrice,
-      seatNumber: ticket.seatNumber, // Include seatNumber here
+      seatNumber: ticket.seatNumber,
     });
     
     res.status(201).json({
@@ -372,7 +322,6 @@ app.post('/ticket', verifySupabaseToken, validateTicketInput, async (req, res) =
   }
 });
 
-
 app.get('/tickets', async (req, res) => {
   try {
     const { page = 1, limit = 12, city, movie, date } = req.query;
@@ -380,7 +329,6 @@ app.get('/tickets', async (req, res) => {
     
     const filter = { status: 'available' };
     
-    // Build filters
     if (city) filter.city = { $regex: city, $options: 'i' };
     if (movie) filter.movie = { $regex: movie, $options: 'i' };
     if (date) {
@@ -469,23 +417,39 @@ app.get('/ticket/:id/contact', verifySupabaseToken, async (req, res) => {
   }
 });
 
+// Socket.io events
 io.on('connection', (socket) => {
-  console.log('New client connected');
+  console.log('🔌 New client connected');
   
   socket.on('disconnect', () => {
-    console.log('Client disconnected');
+    console.log('❌ Client disconnected');
   });
 });
 
+// Error handling
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('🔥 Error:', err.stack);
   res.status(500).json({
-    success: false,
-    message: 'Server error',
-    error: err.message
+    error: 'Internal Server Error',
+    message: isProduction ? 'Something went wrong!' : err.message
   });
 });
 
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('💥 Unhandled Rejection:', err);
+  server.close(() => process.exit(1));
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err);
+  server.close(() => process.exit(1));
+});
+
+// Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
